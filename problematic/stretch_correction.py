@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
-from instamatic.formats import *
+# from instamatic.formats import *
 
 from skimage.feature import canny
 from skimage.measure import label, regionprops
@@ -118,13 +118,13 @@ def get_sigma_interactive(img, sigma=20):
 def plot_props(edges, props):
     plt.imshow(edges)
     for prop in props:
-        print "centroid = ({:.2f}, {:.2f})".format(*prop.centroid)
-        print "eccentricity = {:.2f}".format(prop.eccentricity)
-        print "stretch azimuth = {:.2f} degrees".format(np.degrees(prop.orientation))
-        print "stretch percent = {:.2%}".format(-1 + prop.major_axis_length/prop.minor_axis_length)
-        print "min/max lengths = ({:.2f}, {:.2f})".format(prop.minor_axis_length, prop.major_axis_length)
-        print "avg. diameter = {:.2f}".format(prop.equivalent_diameter)
-        print
+        print("centroid = ({:.2f}, {:.2f})".format(*prop.centroid))
+        print("eccentricity = {:.2f}".format(prop.eccentricity))
+        print("stretch azimuth = {:.2f} degrees".format(np.degrees(prop.orientation)))
+        print("stretch percent = {:.2%}".format(-1 + prop.major_axis_length/prop.minor_axis_length))
+        print("min/max lengths = ({:.2f}, {:.2f})".format(prop.minor_axis_length, prop.major_axis_length))
+        print("avg. diameter = {:.2f}".format(prop.equivalent_diameter))
+        print()
         y0, x0 = prop.centroid
         orientation = prop.orientation
         x1 = x0 + math.cos(orientation) * 0.5 * prop.major_axis_length
@@ -168,9 +168,9 @@ def get_ring_props(edges):
 
 def main(sigma=None):
     if len(sys.argv) != 2:
-        print "Program to find microscope stretch percent/azimuth from a powder pattern"
-        print
-        print "Usage: python find_stretch_correction.py powder_pattern.tiff"
+        print("Program to find microscope stretch percent/azimuth from a powder pattern")
+        print()
+        print("Usage: python find_stretch_correction.py powder_pattern.tiff")
         exit()
 
     fname = sys.argv[1]

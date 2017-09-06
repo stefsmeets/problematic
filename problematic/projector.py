@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from xcore import UnitCell
-from xcore.spacegroup import generate_hkl_listing
+# from xcore import UnitCell
+# from xcore.spacegroup import generate_hkl_listing
 from fractions import Fraction, gcd
 
 from functools import lru_cache
+from functools import reduce
 
 def recover_integer_vector(u, denom=10):
     """
@@ -189,13 +190,13 @@ class Projector(object):
         if verbose:
             self.cell.info()
 
-            print "Projection data"
-            print "   Reflections:", self.repl.shape[0]
-            print "         Range: {} - {} Angstrom".format(dmin, dmax)
-            print "    min(u,v,w):", self.repl.min(axis=0)
-            print "    max(u,v,w):", self.repl.max(axis=0)
-            print "    Thickness: {}".format(thickness)
-            print "    Wavelength: {}".format(wavelength)
+            print("Projection data")
+            print("   Reflections:", self.repl.shape[0])
+            print("         Range: {} - {} Angstrom".format(dmin, dmax))
+            print("    min(u,v,w):", self.repl.min(axis=0))
+            print("    max(u,v,w):", self.repl.max(axis=0))
+            print("    Thickness: {}".format(thickness))
+            print("    Wavelength: {}".format(wavelength))
         
     @classmethod
     def from_parameters(cls, params=None, spgr=None, name=None, composition=None, **kwargs):
@@ -367,7 +368,7 @@ class Projector(object):
 
         lauegr = self.cell.laue_group
 
-        from orientations import get_orientations
+        from .orientations import get_orientations
 
         alpha_beta = get_orientations(lauegr=lauegr)[:,3:5]
 

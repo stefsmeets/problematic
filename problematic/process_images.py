@@ -99,19 +99,19 @@ def correct_background(img):
 def main():
     fns = sys.argv[1:]
     if not fns:
-        print "Program to pre-process diffraction patterns (in TIFF format)."
-        print "    - Shapiro-Wilk test for normality to filter images without signal"
-        print "    - Cross-correlation to average all images"
-        print "    - Cross-correlation to determine location of the incident beam on each frame"
-        print
-        print "Usage: python process_patterns.py image1.tiff [image2.tiff ...]"
-        print
-        print "Or, using a globbing pattern:"
-        print "       python process_patterns.py data/image_*.tiff"
-        print
-        print "Or, using a file list:"
-        print "       python process_patterns.py filelist.txt"
-        print
+        print("Program to pre-process diffraction patterns (in TIFF format).")
+        print("    - Shapiro-Wilk test for normality to filter images without signal")
+        print("    - Cross-correlation to average all images")
+        print("    - Cross-correlation to determine location of the incident beam on each frame")
+        print()
+        print("Usage: python process_patterns.py image1.tiff [image2.tiff ...]")
+        print()
+        print("Or, using a globbing pattern:")
+        print("       python process_patterns.py data/image_*.tiff")
+        print()
+        print("Or, using a file list:")
+        print("       python process_patterns.py filelist.txt")
+        print()
         exit()
 
     stream = "cli"
@@ -123,11 +123,11 @@ def main():
             fns = [line.strip() for line in open(fns[0], "r") if not line.startswith("#")]
             stream = "list"
     
-    print "Reading {} images".format(len(fns))
+    print("Reading {} images".format(len(fns)))
     imgs = [read_tiff(fn)[0] for fn in fns]
 
     if stream != "list":
-        print "Calculating Shapiro-Wilk curve"
+        print("Calculating Shapiro-Wilk curve")
     s = get_shapiro_curve(imgs)
     r = np.argsort(s)
     plt.plot(s[r], "r+")
@@ -135,21 +135,21 @@ def main():
     plt.show()
     plt.close()
 
-    thresh = raw_input("\nThreshold? [0.25] >> ")
+    thresh = input("\nThreshold? [0.25] >> ")
     thresh = float(thresh) if thresh else 0.25
 
-    print "Threshold =", thresh
+    print("Threshold =", thresh)
 
     idx = np.argwhere(s < thresh)
 
     fns =  [ fn  for i,fn  in enumerate(fns)  if i in idx ]
     imgs = [ img for i,img in enumerate(imgs) if i in idx ]
     
-    print "{} images remaining".format(len(imgs))
+    print("{} images remaining".format(len(imgs)))
 
-    print "Generating powder image"
+    print("Generating powder image")
     initref = get_initial_reference(imgs)
-    print "Aligning images"
+    print("Aligning images")
     powder = get_reference(imgs, initref, remove_background=True)
     
     plt.imshow(powder)
@@ -158,27 +158,27 @@ def main():
 
     fpowder = "powder.tiff"
     write_tiff(fpowder, powder, header="Powder pattern generated from {} images".format(len(imgs)))
-    print "Writing powder image to {}".format(fpowder)
+    print("Writing powder image to {}".format(fpowder))
 
     powder1d = make_1d_powder_pattern(powder, center=np.array(powder.shape) / 2)
     fpowder1d = "powder.xye"
     np.savetxt(fpowder1d, powder1d, fmt="%12.4f")
-    print "Writing powder pattern to {}".format(fpowder1d)
+    print("Writing powder pattern to {}".format(fpowder1d))
 
-    print "Performing shift correction"
+    print("Performing shift correction")
     centers = get_centers(imgs, powder)
 
     fcalib = "calibration.json"
     filenames = [os.path.split(fn)[-1] for fn in fns]
     df = pd.DataFrame(index=pd.Index(filenames), data=centers, columns=("det_ycent", "det_xcent"))
 
-    print >> open(fcalib,"w"), df.to_json(orient="index").replace('},"', '},\n"')
-    print "Writing incident beam centers to {}".format(fcalib)
+    print(df.to_json(orient="index").replace('},"', '},\n"'), file=open(fcalib,"w"))
+    print("Writing incident beam centers to {}".format(fcalib))
 
     if stream != "list":
         filelist = "filelist.txt"
-        print >> open(filelist, "w"), "\n".join(fns)
-        print "Writing", filelist
+        print("\n".join(fns), file=open(filelist, "w"))
+        print("Writing", filelist)
     
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
 from .stretch_correction import affine_transform_ellipse_to_circle, apply_transform_to_image
-from tools import find_beam_center
+from .tools import find_beam_center
 from scipy import ndimage
 import heapq
-from extensions import get_score, get_score_mod, get_score_shape
+from .get_score_cy import get_score, get_score_mod, get_score_shape
 import lmfit
 import numpy as np
 
@@ -148,7 +148,7 @@ class IndexerMulti(object):
         indexers = {}
         for cell in cells:
             phase = cell["name"]
-            projector = Projector.from_parameters(**dict(cell.items() + kwargs.items()))
+            projector = Projector.from_parameters({**cell, **kwargs})
             indexer = Indexer.from_projector(projector, pixelsize=pixelsize)
             indexers[phase] = indexer
 
@@ -294,7 +294,7 @@ class Indexer(object):
 
         nprojections = len(self.projections)
         nrotations = int(2*np.pi/self.theta)
-        print "{} projections x {} rotations = {} items\n".format(nprojections, nrotations, nprojections*nrotations)
+        print("{} projections x {} rotations = {} items\n".format(nprojections, nrotations, nprojections*nrotations))
     
         self.get_score = get_score_shape
     
@@ -622,8 +622,8 @@ class Indexer(object):
         res = mini.emcee(params=params)
 
         if verbose:
-            print "\nMedian of posterior probability distribution"
-            print "--------------------------------------------"
+            print("\nMedian of posterior probability distribution")
+            print("--------------------------------------------")
             lmfit.report_fit(res)
 
         # find the maximum likelihood solution
@@ -634,9 +634,9 @@ class Indexer(object):
         if verbose:
             for i, par in enumerate(res.var_names):
                 params[par].value = mle_soln[i]
-            print "\nMaximum likelihood Estimation"
-            print "-----------------------------"
-            print params
+            print("\nMaximum likelihood Estimation")
+            print("-----------------------------")
+            print(params)
         
         corner.corner(res.flatchain, labels=res.var_names, truths=[res.params[par].value for par in res.params if res.params[par].vary])
         plt.show()

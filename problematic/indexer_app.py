@@ -5,7 +5,7 @@ import pandas as pd
 
 import time
 
-from indexer import *
+from .indexer import *
 from tqdm import tqdm
 import logging
 
@@ -86,42 +86,42 @@ def multi_run(arg, procs=1, dry_run=False, logfile=None):
     fns = get_files(file_pat)
 
     nfiles = len(fns)
-    print "Found {} files".format(nfiles)
+    print("Found {} files".format(nfiles))
 
     csv_outs = []
-    for i in xrange(procs):
-        print " Chunk #{}: {} files".format(i, len(fns[i::procs]))
+    for i in range(procs):
+        print(" Chunk #{}: {} files".format(i, len(fns[i::procs])))
         root, ext = os.path.splitext(csv_out)
         csv_outs.append("{}_{}{}".format(root, i, ext))
-    print
+    print()
 
     cores = cpu_count()
 
     assert procs >= 0, 'Expected a positive number of processors'
     if procs > cores:
-        print '{} cores detected, are you sure you want to run {} processes? [y/n]'.format(cores, procs)
-        if not raw_input(' >> [y] ').lower() == 'y':
+        print('{} cores detected, are you sure you want to run {} processes? [y/n]'.format(cores, procs))
+        if not input(' >> [y] ').lower() == 'y':
             sys.exit()
 
     processes = []
 
     t1 = time.time()
 
-    print 'Starting processes...'
-    for i in xrange(procs):
+    print('Starting processes...')
+    for i in range(procs):
         cmd = "instamatic.index.exe {} -c {} {}".format(arg, i, procs)
         if logfile:
             cmd += " --logfile {}".format(logfile)
 
-        print "     >>", cmd,
+        print("     >>", cmd, end=' ')
 
         if not dry_run:
             # CREATE_NEW_CONSOLE is windows only
             p = sp.Popen(cmd, creationflags=sp.CREATE_NEW_CONSOLE)
             processes.append(p)
-            print ';; started (PID={})'.format(p.pid)
+            print(';; started (PID={})'.format(p.pid))
         else:
-            print ';; not started'
+            print(';; not started')
 
     if dry_run:
         return
@@ -138,22 +138,22 @@ def multi_run(arg, procs=1, dry_run=False, logfile=None):
     for csv in csv_outs:
         os.unlink(csv)
     write_ycsv(csv_out, data=all_results, metadata=d)
-    print "Writing results to {}".format(csv_out)
+    print("Writing results to {}".format(csv_out))
 
-    print "Time taken: {:.0f} s / {:.1f} s per image".format(t2-t1, (t2-t1)/nfiles)
-    print
-    print " >> Done << "
+    print("Time taken: {:.0f} s / {:.1f} s per image".format(t2-t1, (t2-t1)/nfiles))
+    print()
+    print(" >> Done << ")
 
 
 def run(arg, chunk=None, dry_run=False, log=None):
     log = log or logging.getLogger(__name__)
 
     if len(sys.argv) == 1:
-        print "Usage: instamatic.index indexing.inp"
-        print
-        print "Example input file:"
-        print 
-        print TEMPLATE
+        print("Usage: instamatic.index indexing.inp")
+        print()
+        print("Example input file:")
+        print() 
+        print(TEMPLATE)
         exit()
 
     d = yaml_ordered_load(arg)
@@ -186,7 +186,7 @@ def run(arg, chunk=None, dry_run=False, log=None):
         pixelsize = d["experiment"]["pixelsize"]
         indexer = IndexerMulti.from_cells(d["cell"], pixelsize=pixelsize, **d["projections"])
     else:
-        projector = Projector.from_parameters(**dict(d["cell"].items() + d["projections"].items()))
+        projector = Projector.from_parameters({**d["cell"], **d["projections"]})
         indexer = Indexer.from_projector(projector, pixelsize=d["experiment"]["pixelsize"])
 
     fns = get_files(files)
@@ -201,7 +201,7 @@ def run(arg, chunk=None, dry_run=False, log=None):
         prefix = ""
 
     nfiles = len(fns)
-    print "Found {} files".format(nfiles)
+    print("Found {} files".format(nfiles))
 
     if not os.path.exists(drc_out):
         os.mkdir(drc_out)
@@ -248,13 +248,13 @@ def run(arg, chunk=None, dry_run=False, log=None):
     else:
         write_ycsv(csv_out, data=all_results, metadata=d)
 
-    print "Writing results to {}".format(csv_out)
+    print("Writing results to {}".format(csv_out))
     
     time_taken = t.last_print_t - t.start_t
     msg = "Time taken: {:.0f} s / {:.1f} s per image".format(time_taken, (time_taken)/nfiles)
-    print msg
-    print
-    print " >> DONE <<"
+    print(msg)
+    print()
+    print(" >> DONE <<")
 
     log.info(projector._get_projection_alpha_beta_cache.cache_info())
     log.info(msg)
