@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# from xcore import UnitCell
-# from xcore.spacegroup import generate_hkl_listing
+from .unitcell import UnitCell
+from .spacegroup import generate_hkl_listing
 from fractions import Fraction, gcd
 
 from functools import lru_cache

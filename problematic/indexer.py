@@ -2,7 +2,7 @@ from .stretch_correction import affine_transform_ellipse_to_circle, apply_transf
 from .tools import find_beam_center
 from scipy import ndimage
 import heapq
-from .get_score_cy import get_score, get_score_mod, get_score_shape
+from .get_score_cy import get_score, get_score_mod, get_score_shape, get_score_shape_lst
 import lmfit
 import numpy as np
 
@@ -296,8 +296,10 @@ class Indexer(object):
         nrotations = int(2*np.pi/self.theta)
         print("{} projections x {} rotations = {} items\n".format(nprojections, nrotations, nprojections*nrotations))
     
-        self.get_score = get_score_shape
-    
+    def get_score(self, img, center, pks, scale):
+        center_x, center_y = center
+        return get_score_shape_lst(img, pks, scale, center_x, center_y)
+
     def set_pixelsize(self, pixelsize):
         """
         Sets pixelsize and calculates scale from pixelsize
@@ -340,7 +342,7 @@ class Indexer(object):
     def projector(self, projector):
         self._projector = projector
     
-    def index(self, img, center, **kwargs):
+    def index(self, img, center=None, **kwargs):
         """
         This function attempts to index the diffraction pattern in `img`
 
@@ -349,6 +351,9 @@ class Indexer(object):
         center: tuple(x, y)
             x and y coordinates to the position of the primary beam
         """
+        if center is None:
+            raise ValueError("No beam center supplied")
+
         return self.find_orientation(img, center, **kwargs)
         
     def find_orientation(self, img, center, **kwargs):
@@ -370,43 +375,31 @@ class Indexer(object):
         center_x, center_y = center
         scale = self.scale
         
-        rotations = np.arange(0, 2*np.pi, theta)
-        R = make_2d_rotmat(theta)
-        
-        ## Could precalculate pks_list for all in-plane rotations, but it slightly slower
-        ## than doing pks = np.dot(pks, R)
-        # Rs = np.stack([make_2d_rotmat(rot) for rot in rotations])
-        # pks_list = np.tensordot(pks, Rs, axes=([1],[1])).transpose((1,0,2))
-        # for pks in pks_list:
-        #     ...
-
         for n, projection in enumerate(self.projections):
-            pks = projection[:,3:5]
-            shape_factor = projection[:,5]
+            best_score = 0
+            best_gamma = 0
+    
+            score, gamma = self.get_score(img, center, projection[:,3:6], scale)
+            if score > best_score:
+                best_score = score
+                best_gamma = gamma
 
-            for m, rotation in enumerate(rotations):
-                score  = self.get_score(img, pks, shape_factor, scale, center_x, center_y)
-        
-                vals.append((score, n, m))
-                
-                pks = np.dot(pks, R) # for next round
+            vals.append((best_score, n, best_gamma))
 
         heap = heapq.nlargest(nsolutions, vals)
         self._vals = vals
         
-        # print "Time total/proj/run: {:.2f} s / {:.2f} ms / {:.2f} us".format(t2-t1, 1e3*(t2-t1) / (n+1), 1e6*(t2-t1)/ ((n+1)*len(rotations)))
-               
         heap = sorted(heap, reverse=True)[0:nsolutions]
         
         results = [IndexingResult(score=score,
                                   number=n,
                                   alpha=round(self.infos[n].alpha, 4),
                                   beta=round(self.infos[n].beta, 4),
-                                  gamma=theta*m,
+                                  gamma=gamma,
                                   center_x=center_x,
                                   center_y=center_y,
                                   scale=round(scale, 4),
-                                  phase=phase) for (score, n, m) in heap]
+                                  phase=phase) for (score, n, gamma) in heap]
 
         return results
     

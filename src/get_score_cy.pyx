@@ -2,6 +2,9 @@ import numpy as np
 cimport numpy as np
 cimport cython
 
+from cython.parallel import prange
+from libc.math cimport cos, sin
+
 INT = np.int
 ctypedef np.int_t INT_t
 
@@ -112,7 +115,7 @@ cpdef float get_score_mod(np.ndarray[INT_t, ndim=2] img, np.ndarray[DOUBLE_t, nd
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False)  # turn off negative index wrapping for entire function
-cpdef float get_score_shape(np.ndarray[INT_t, ndim=2] img, np.ndarray[DOUBLE_t, ndim=2] pks, np.ndarray[DOUBLE_t] shape_factor, float scale, float center_x, float center_y):
+cpdef float get_score_shape(np.ndarray[INT_t, ndim=2] img, np.ndarray[DOUBLE_t, ndim=2] pks, float scale, float center_x, float center_y):
     """Score the projection based on the image given
 
     img: ndarray, dtype=INT
@@ -159,10 +162,54 @@ cpdef float get_score_shape(np.ndarray[INT_t, ndim=2] img, np.ndarray[DOUBLE_t, 
         if i > xmax:
             nfail += 1
             continue
-
+    
         item = img[i, j]
         if item > thresh:
-            score = score + item * shape_factor[n]
+            score = score + item * pks[n, 2]
             nfit += 1
 
     return score * nfit / (nrows - nfail)
+
+@cython.boundscheck(False) # turn off bounds-checking for entire function
+@cython.wraparound(False)  # turn off negative index wrapping for entire function
+@cython.nonecheck(False)
+cpdef tuple get_score_shape_lst(np.ndarray[INT_t, ndim=2] img, np.ndarray[DOUBLE_t, ndim=2] pks, float scale, float center_x, float center_y):
+    cdef int nrows = pks.shape[0]
+
+    cdef float best_score = 0
+    cdef float best_angle = 0
+
+    cdef float score
+    cdef float theta = 0.03
+    cdef float pi = 6.28 
+    cdef float angle = 0.0
+
+    cdef float x, y
+    cdef float xx, yy
+
+    cdef float sintheta = sin(theta)
+    cdef float costheta = cos(theta)
+
+    while angle < pi:
+        score = get_score_shape(img, pks, scale, center_x, center_y)
+
+        if score > best_score:
+            best_score = score
+            best_angle = angle
+
+        for i in range(nrows):
+            x = pks[i, 0]
+            y = pks[i, 1]
+
+            xx = x * costheta - y * sintheta
+            yy = y * costheta + x * sintheta
+
+            pks[i, 0] = xx
+            pks[i, 1] = yy
+
+        angle += theta
+
+    return (best_score, best_angle)
+
+
+
