@@ -296,10 +296,6 @@ class Indexer(object):
         nrotations = int(2*np.pi/self.theta)
         print("{} projections x {} rotations = {} items\n".format(nprojections, nrotations, nprojections*nrotations))
     
-    def get_score(self, img, center, pks, scale):
-        center_x, center_y = center
-        return get_score_shape_lst(img, pks, scale, center_x, center_y)
-
     def set_pixelsize(self, pixelsize):
         """
         Sets pixelsize and calculates scale from pixelsize
@@ -341,6 +337,22 @@ class Indexer(object):
     @projector.setter
     def projector(self, projector):
         self._projector = projector
+
+    def get_score(self, img, result, projector=None):
+        if not projector:
+            projector = self.projector
+        scale = result.scale
+        alpha = result.alpha
+        beta = result.beta
+        gamma = result.gamma
+        center_x = result.center_x
+        center_y = result.center_y
+
+        proj = projector.get_projection(alpha, beta, gamma)[3:6]
+
+        score  = get_score_shape(img, proj, scale, center_x, center_y)
+
+        return score
     
     def index(self, img, center=None, **kwargs):
         """
@@ -355,7 +367,7 @@ class Indexer(object):
             raise ValueError("No beam center supplied")
 
         return self.find_orientation(img, center, **kwargs)
-        
+    
     def find_orientation(self, img, center, **kwargs):
         """
         This function attempts to find the orientation of the crystal in `img`
@@ -378,8 +390,9 @@ class Indexer(object):
         for n, projection in enumerate(self.projections):
             best_score = 0
             best_gamma = 0
-    
-            score, gamma = self.get_score(img, center, projection[:,3:6], scale)
+            proj = projection[:,3:6]
+
+            score, gamma = get_score_shape_lst(img, proj, scale, center_x, center_y)
             if score > best_score:
                 best_score = score
                 best_gamma = gamma
@@ -491,7 +504,8 @@ class Indexer(object):
         else:
             return new_results
     
-    def refine(self, img, result, projector=None, verbose=True, method="least-squares", vary_center=True, vary_scale=True, **kwargs):
+    def refine(self, img, result, projector=None, verbose=True, method="least-squares", 
+               vary_center=True, vary_scale=True, vary_alphabeta=True, vary_gamma=True, **kwargs):
         """
         Refine the orientations of all solutions in results agains the given image
 
@@ -517,18 +531,17 @@ class Indexer(object):
             sc = params["scale"].value
             
             proj = projector.get_projection(al, be, ga)
-            pks = proj[:,3:5]
-            shape_factor = proj[:,5]
-            score = self.get_score(img, pks, shape_factor, sc, cx, cy)
+            pks = proj[:,3:6]
+            score = get_score_shape(img, pks, sc, cx, cy)
 
             return 1e3/(1+score)
 
         params = lmfit.Parameters()
         params.add("center_x", value=result.center_x, vary=vary_center, min=result.center_x - 2.0, max=result.center_x + 2.0)
         params.add("center_y", value=result.center_y, vary=vary_center, min=result.center_y - 2.0, max=result.center_y + 2.0)
-        params.add("alpha", value=result.alpha, vary=True)
-        params.add("beta",  value=result.beta,  vary=True)
-        params.add("gamma", value=result.gamma, vary=True)
+        params.add("alpha", value=result.alpha, vary=vary_alphabeta)
+        params.add("beta",  value=result.beta,  vary=vary_alphabeta)
+        params.add("gamma", value=result.gamma, vary=vary_gamma)
         params.add("scale", value=result.scale, vary=vary_scale, min=result.scale*0.8, max=result.scale*1.2)
         
         args = img,
@@ -544,10 +557,9 @@ class Indexer(object):
         scale, center_x, center_y = [round(p[key].value, 2) for key in ("scale", "center_x", "center_y")]
         
         proj = projector.get_projection(alpha, beta, gamma)
-        pks = proj[:,3:5]
-        shape_factor = proj[:,5]
+        pks = proj[:,3:6]
         
-        score = round(self.get_score(img, pks, shape_factor, scale, center_x, center_y), 2)
+        score = round(get_score_shape(img, pks, scale, center_x, center_y), 2)
         
         # print "Score: {} -> {}".format(int(score), int(score))
         
@@ -582,9 +594,8 @@ class Indexer(object):
             sc = params["scale"].value
             
             proj = projector.get_projection(al, be, ga)
-            pks = proj[:,3:5]
-            shape_factor = proj[:,5]
-            score = self.get_score(img, pks, shape_factor, sc, cx, cy)
+            pks = proj[:,3:6]
+            score = get_score_shape(img, pks, sc, cx, cy)
             
             resid = 1e3/(1+score)
             
