@@ -427,7 +427,7 @@ class Indexer(object):
         for result in results:
             self.plot(img, result, **kwargs)
     
-    def plot(self, img, result, projector=None, show_hkl=False, ax=None, **kwargs):
+    def plot(self, img, result, projector=None, show_hkl=False, title="", ax=None, **kwargs):
         """
         Plot the image with the projection given in 'result'
 
@@ -467,13 +467,16 @@ class Indexer(object):
         shape_factor = proj[:,5:6]
         hkl = proj[:,0:3]
 
+        if title:
+            title += (" \n")
+
         ax.imshow(img, vmax=vmax, cmap="gray")
         ax.plot(center_y, center_x, marker="o")
         if show_hkl:
             for idx, (h, k, l) in enumerate(hkl):
                 ax.text(j[idx], i[idx], "{:.0f} {:.0f} {:.0f}".format(h, k, l), color="white")
         
-        ax.set_title("al: {:.2f}, be: {:.2f}, ga: {:.2f}\nscore = {:.1f}, scale = {:.1f}\nproj = {}, phase = {}".format(alpha, beta, gamma, score, scale, n, phase))
+        ax.set_title("{}al: {:.2f}, be: {:.2f}, ga: {:.2f}\nscore = {:.1f}, scale = {:.1f}\nproj = {}, phase = {}".format(title, alpha, beta, gamma, score, scale, n, phase))
         ax.scatter(j, i, marker="+", c=shape_factor)
         ax.set_xlim(0, img.shape[0]-1)
         ax.set_ylim(img.shape[1]-1, 0)
@@ -650,7 +653,13 @@ class Indexer(object):
         Get projection along a particular zone axis
         See Projector.get_projection()
         """
-        return self.projector.get_projection(result.alpha, result.beta, result.gamma)
+        proj = self.projector.get_projection(result.alpha, result.beta, result.gamma)
+
+    def get_indices(self, result, shape):
+        proj = self.projector.get_projection(result.alpha, result.beta, result.gamma)
+        pks = proj[:,3:5]
+        i, j, proj = get_indices(pks, result.scale, (result.center_x, result.center_y), shape, hkl=proj)
+        return np.hstack((proj, i.reshape(-1,1), j.reshape(-1,1)))
 
     def get_intensities(self, img, result, **kwargs):
         """

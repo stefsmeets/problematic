@@ -53,6 +53,7 @@ def affine_transform_ellipse_to_circle(azimuth, amplitude, inverse=False):
 
 
 def apply_stretch_correction(z, center=None, azimuth=0, amplitude=0):
+    """Apply stretch correction to image"""
     azimuth_rad = np.radians(azimuth)    # go to radians
     amplitude_pc = amplitude / (2*100)   # as percentage
     tr_mat = affine_transform_ellipse_to_circle(azimuth_rad, amplitude_pc)
@@ -61,6 +62,7 @@ def apply_stretch_correction(z, center=None, azimuth=0, amplitude=0):
 
 
 def im_reconstruct(props, shape=None):
+    """Takes a list of regionprops and reconstructs an image with the given shape"""
     z = np.zeros(shape)
     for prop in props:
         x0,y0,x1,y1 = prop.bbox
@@ -69,6 +71,11 @@ def im_reconstruct(props, shape=None):
 
 
 def load(filepat):
+    """Takes a file pattern (*.h5) to load a list of instamatic h5 files,
+    or a hdf5 file in hyperspy format
+
+    returns serialED object
+    """
     if os.path.exists(filepat):
         ed = pc.load(filepat)
     else:
@@ -123,3 +130,22 @@ class serialED(pc.ElectronDiffraction):
                                           parallel=False, inplace=False)
         self._orientation_collection = orientation_collection
         return orientation_collection
+
+    def orientation_explorer(self, indexer, orientations, imshow_kwargs={}):
+        from peakexplorer import PeakExplorer
+        default_imshow_kwargs = {"cmap":"gray"}
+        default_imshow_kwargs.update(imshow_kwargs)
+        peakexp = PeakExplorer(indexer=indexer, orientations=orientations, imshow_kwargs=default_imshow_kwargs)
+        peakexp.interactive(self)
+
+    def plot_orientations(self, indexer, orientation_collection, n=25, vmin=None, vmax=None, ax=None):
+        import matplotlib.pyplot as plt
+        scores = np.array([ori[0].score for ori in orientation_collection.data])
+        ix = np.argsort(scores)[::-1]
+
+        for i in ix:
+            indexer.plot(self.data[i], orientation_collection.data[i][0], title="Image #"+ str(i), 
+                         vmin=vmin, vmax=vmax, ax=ax)
+        
+        if not ax:
+            plt.show()
