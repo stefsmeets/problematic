@@ -1,17 +1,19 @@
-# Instamatic
+# problematic
 
-Program for automatic data collection of diffraction snapshots on electron microscopes
+Program for processing serial electron diffracton data
 
 ## Requirements
 
-- Python2.7
+- Python3.6
+- PyCrystEM
+- HyperSpy
 - ...
 
 ## Installation
 
 Download and extract:
 
-https://github.com/stefsmeets/instamatic/archive/master.zip
+https://github.com/stefsmeets/problematic/archive/master.zip
 
 Install:
 
@@ -19,7 +21,7 @@ Install:
 
 Uninstall:
 
-    pip uninstall instamatic
+    pip uninstall problematic
 
 
 
