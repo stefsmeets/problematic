@@ -129,7 +129,7 @@ def pearsonr(x, y):
     return np.sum(xdiff * ydiff) / (np.sum(xdiff * xdiff) * np.sum(ydiff * ydiff))**0.5
 
 
-def serialmerge(df, kind="mean", digitize_threshold=None, key="val", verbose=False):
+def func_serialmerge(df, kind="mean", digitize_threshold=None, key="val", verbose=False):
     """Implementation based on SerialRank algorithm
     http://arxiv.org/abs/1406.5370
     http://www.di.ens.fr/~fogel/SerialRank/tutorial.html"""
@@ -218,9 +218,7 @@ def load_hkl_files(fns=[]):
             print("Problem reading file {} {}".format(i, fn))
             continue
         dfn.index = pd.Index(dfn.index)
-        
         dfn["frame"] = i
-    
         try:
             dfx = dfx.append(dfn)
         except NameError:
@@ -229,9 +227,30 @@ def load_hkl_files(fns=[]):
     return dfx
 
 
-def serialmerge_fns(fns, remove_0_reflections=True, fout="merged.hkl", verbose=False):
-    dfx = load_hkl_files(fns)
+def load_numpy_arrays(data):
+    for i, row in enumerate(data):
+        dfn = pd.DataFrame(data=row, columns=("h", "k", "l", "val", "sigma"))
+        dfn = dfn.set_index(keys=["h", "k", "l"])
+        dfn = dfn.set_index(pd.Index(dfn.index))
+        dfn["frame"] = i
+        try:
+            dfx = dfx.append(dfn)
+        except NameError:
+            dfx = dfn
+    return dfx
 
+
+def serialmerge(data, remove_0_reflections=True, fout="merged.hkl", verbose=False):
+    if isinstance(data, (list, tuple)) and isinstance(data[0], str):
+        dfx = load_hkl_files(fns)
+
+    elif isinstance(data, (list, tuple)) and isinstance(data[0], np.ndarray):
+        dfx = load_numpy_arrays(data)
+
+    elif not isinstance(data, pd.DataFrame):
+        raise ValueError("Pass a list of numpy arrays, hkl files, or data frame with keys `h k l val sigma`")
+
+    print("Number of frames:", max(dfx["frame"]+1))
     print("Observed reflections: {}".format(len(dfx)))
 
     if remove_0_reflections:
@@ -241,9 +260,8 @@ def serialmerge_fns(fns, remove_0_reflections=True, fout="merged.hkl", verbose=F
         print("Remaining reflections: {}".format(len(dfx)))
 
     print("Unique reflections:", len(dfx.groupby(dfx.index)))
-    print("Number of frames:", max(dfx["frame"]+1))
 
-    m = serialmerge(dfx, verbose=verbose)
+    m = func_serialmerge(dfx, verbose=verbose)
     
     merged = dfx.groupby(dfx.index).mean()
     
@@ -259,11 +277,14 @@ def serialmerge_fns(fns, remove_0_reflections=True, fout="merged.hkl", verbose=F
         print("\nMost common reflections:")
         print(m.sort_values("Nobs", ascending=False)["Nobs"][0:10])
     
-    fout = open(fout, "w")
-    for i, row in m.iterrows():
-        h,k,l = i
-        print("{:4d}{:4d}{:4d}{:8.1f}{:8.1f}".format(h, k, l, row.val, 1.0), file=fout)
-    print("\n >> Wrote {} reflections to file {}".format(len(m), fout.name))
+    if fout:
+        fout = open(fout, "w")
+        for i, row in m.iterrows():
+            h,k,l = i
+            print("{:4d}{:4d}{:4d}{:8.1f}{:8.1f}".format(h, k, l, row.val, 1.0), file=fout)
+        print("\n >> Wrote {} reflections to file {}".format(len(m), fout.name))
+
+    return m
 
 
 def serialmerge_entry():
@@ -306,7 +327,7 @@ hkl files should be in free format (space separated) with 5 columns: h k l I/F e
         print(description)
         exit()
 
-    serialmerge_fns(fns)
+    serialmerge(fns)
 
 
 

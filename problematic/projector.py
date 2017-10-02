@@ -180,6 +180,8 @@ class Projector(object):
 
         self.thickness = thickness
         self.wavelength = wavelength
+        self.dmin = dmin
+        self.dmax = dmax
         
         self.orth  = cell.orthogonalization_matrix()
         self.iorth = np.linalg.inv(self.orth)
@@ -204,7 +206,19 @@ class Projector(object):
 
         See: xcore.unitcell.UnitCell"""
         return cls(UnitCell(params, spgr=spgr, name=name, composition=composition), **kwargs)
-        
+    
+    def to_dict(self):
+        c = self.cell.to_dict()
+        return {
+            "projector": {
+                "dmin": self.dmin,
+                "dmax": self.dmax,
+                "thickness": self.thickness,
+                "wavelength": self.wavelength 
+                },
+            "cell": c
+            }
+
     def get_projection(self, alpha, beta, gamma=0, use_cache=True):
         """Get projection along a particular zone axis
 

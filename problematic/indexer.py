@@ -161,6 +161,12 @@ class IndexerMulti(object):
         for phase, indexer in self._indexers.items():
             indexer.set_pixelsize(pixelsize)
 
+    def to_dict(self):
+        return self.to_list()
+
+    def to_list(self):
+        return [indexer.to_dict() for indexer in self._indexers]
+
     def index(self, img, center, **kwargs):
         """
         Applied all indexers to img
@@ -302,6 +308,13 @@ class Indexer(object):
         """
         self.pixelsize = pixelsize
         self.scale = 1/pixelsize
+
+    def to_dict(self):
+        d = self.projector.to_dict()
+        d["experiment"] = {
+            "pixelsize": self.pixelsize
+            }
+        return d
 
     @classmethod
     def from_projections_file(cls, fn="projections.npy", **kwargs):

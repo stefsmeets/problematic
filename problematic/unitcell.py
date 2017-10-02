@@ -22,9 +22,6 @@ else:
     TINYARRAY = True
 
 
-def dict2uc(d):
-    raise RuntimeError("Use unitcell.fromdict instead --> UnitCell.from_dict(d)")
-
 def comp2dict(composition):
     """Takes composition: Si20 O10, returns dict of atoms {'Si':20,'O':10}"""
     import re
@@ -58,7 +55,7 @@ class UnitCell(SpaceGroup):
         if len(cell_params) != 6:
             cell_params = self.parse_cellparams(cell_params)
         
-        self.parameters = tuple(float(par) for par in cell_params)
+        self.parameters = list(float(par) for par in cell_params)
 
         if not self.is_valid_cell():
             print("\n >> Warning: Unit cell parameters do not fit with space group {}".format(self.space_group))
@@ -151,7 +148,7 @@ class UnitCell(SpaceGroup):
             m23 = b*c*(old_div(a,vol))**2 * (cos(be)*cos(ga)-cos(al))
             m13 = a*c*(old_div(b,vol))**2 * (cos(ga)*cos(al)-cos(be))
 
-            mati = ta.array([[m11, m12, m13],
+            mat = ta.array([[m11, m12, m13],
                              [m12, m22, m23],
                              [m13, m23, m33]])
         else:

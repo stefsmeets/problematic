@@ -146,7 +146,7 @@ class PeakExplorer(PeakExplorerBase):
 
     def plot_peaks(self):
         peaks = self.get_peaks()
-        self.pts = self.ax.scatter(peaks[:, 1], peaks[:, 0], c=peaks[:, 2], marker="+")
+        self.pts = self.ax.scatter(peaks[:, 1], peaks[:, 0], c=peaks[:, 2], marker="+", cmap="viridis")
         plt.show()
 
     def replot_peaks(self):
@@ -154,7 +154,7 @@ class PeakExplorer(PeakExplorerBase):
             self.plot()
         peaks = self.get_peaks()
         self.pts.remove()
-        self.pts = self.ax.scatter(peaks[:, 1], peaks[:, 0], c=peaks[:, 2], marker="+")
+        self.pts = self.ax.scatter(peaks[:, 1], peaks[:, 0], c=peaks[:, 2], marker="+", cmap="viridis")
         plt.draw()
     
     def set_title(self):
