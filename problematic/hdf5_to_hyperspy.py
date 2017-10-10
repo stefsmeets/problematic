@@ -27,8 +27,11 @@ def hdf5_to_hyperspy(fns):
         f = h5.File(fn)
         pixelsize = f["data"].attrs["ImagePixelsize"]
     except KeyError:
-        cl = f["data"].attrs["Magnification"]
-        pixelsize = cameralength2pixelsize[cl]
+        try:
+            cl = f["data"].attrs["Magnification"]
+            pixelsize = cameralength2pixelsize[cl]
+        except KeyError:
+            pixelsize = 1
     finally:
         f.close()
 
