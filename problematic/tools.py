@@ -1,5 +1,6 @@
 from scipy import ndimage
 import numpy as np
+from io_utils import read_ycsv
 
 
 def find_beam_center(img, sigma=30):
@@ -11,7 +12,6 @@ def find_beam_center(img, sigma=30):
 
 def get_files(file_pat):
     """Grab files from globbing pattern or stream file"""
-    from instamatic.formats import read_ycsv
     if os.path.exists(file_pat):
         root, ext = os.path.splitext(file_pat)
         if ext.lower() == ".ycsv":

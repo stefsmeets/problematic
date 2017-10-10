@@ -60,7 +60,7 @@ Find orientations:
 Refine and save orientations:
 
     refined = processed.refine_orientations(indexer, orientations)
-    serialED.io.save_orientations(refined)
+    serialED.io_utils.save_orientations(refined)
 
 Show best orientations:
 
@@ -72,7 +72,7 @@ Export indexing results to ycsv file (yaml+csv):
 
 Load orientations and extract intensities:
     
-    orientations = serialED.io.load_orientations()
+    orientations = serialED.io_utils.load_orientations()
     intensities = processed.extract_intensities(orientations=orientations, indexer=indexer)
     
 Merge intensities from best 50 orientations using serialmerge algorithm:

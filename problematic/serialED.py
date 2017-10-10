@@ -6,8 +6,8 @@ import os, sys
 import numpy as np
 import glob
 import datetime
-from . import io
-from .stretch_correction import apply_stretch_correction
+from stretch_correction import apply_stretch_correction
+import io_utils
 
 
 def im_reconstruct(props, shape=None):
@@ -21,12 +21,24 @@ def im_reconstruct(props, shape=None):
 
 def load(filepat):
     """Takes a file pattern (*.h5) to load a list of instamatic h5 files,
-    or a hdf5 file in hyperspy format
+    or a hdf5 file in hyperspy format or a list of files
 
     returns serialED object
     """
     if os.path.exists(filepat):
-        signal = hs.load(filepat)
+        root, ext = os.path.splitext(filepat)
+        if ext.lower() == ".ycsv":
+            df, d = io_utils.read_ycsv(filepat)
+            fns = df.index.tolist()
+            signal = hdf5_to_hyperspy(fns)
+        elif ext.lower() in (".hspy", ".hdf5", ".h5"):
+            signal = hs.load(filepat)
+        else:
+            f = open(filepat, "r")
+            fns = [line.split("#")[0].strip() for line in f if not line.startswith("#")]
+            signal = hdf5_to_hyperspy(fns)
+    elif isinstance(filepat, (list, tuple)):
+        signal = hdf5_to_hyperspy(filepat)
     else:
         fns = glob.glob(filepat)
         signal = hdf5_to_hyperspy(fns)
@@ -191,7 +203,7 @@ class serialED(pc.ElectronDiffraction):
             ed.orientation_explorer(indexer, orientations)
 
             # save results
-            serialED.io.save_orientations(orientations)
+            serialED.io_utils.save_orientations(orientations)
         """
         d = indexer.to_dict()
         d["date"] = str(datetime.datetime.now())
@@ -235,7 +247,7 @@ class serialED(pc.ElectronDiffraction):
             ed.orientation_explorer(indexer, refined_orientations)
 
             # save results
-            serialED.io.save_orientations(refined_orientations)
+            serialED.io_utils.save_orientations(refined_orientations)
         """
         d = indexer.to_dict()
         d["vary_scale"] = vary_scale
@@ -341,25 +353,25 @@ class serialED(pc.ElectronDiffraction):
         except (KeyError, AttributeError):
             d["data"] = None
         df = pd.DataFrame([ori[0] for ori in s._orientations.data])
-        io.write_ycsv(fname, data=df, metadata=d)
+        io_utils.write_ycsv(fname, data=df, metadata=d)
 
     def load_extras(self):
         if hasattr(self.metadata, "Processing"):
             try:
-                d = self.metadata.Processing["datfiles"]
+                d = self.metadata.Processing["datfiles"].as_dictionary()
             except (KeyError, AttributeError):
                 return False
 
             f_centers = d.get("centers", None)
-            if f_centers:
+            if f_centers and os.path.exists(f_centers):
                 self._centers = hs.load(f_centers)
  
             f_orientations = d.get("orientations", None)
-            if f_orientations:
+            if f_orientations and os.path.exists(f_orientations):
                 self._orientations = hs.load(f_orientations)
  
             f_raw_orientations = d.get("raw_orientations", None)
-            if f_raw_orientations:
+            if f_raw_orientations and os.path.exists(f_raw_orientations):
                 self._raw_orientations = hs.load(f_raw_orientations)
             return True
         else:
@@ -375,11 +387,11 @@ class serialED(pc.ElectronDiffraction):
             d["centers"] = f_centers
         if self._orientations:
             f_orientations = root + "_orientations" + "npy"
-            io.save_orientations(self._orientations, out=f_orientations)
+            io_utils.save_orientations(self._orientations, out=f_orientations)
             d["orientations"] = f_orientations
         if self._raw_orientations:
             f_raw_orientations = root + "_raw_orientations" + "npy"
-            io.save_orientations(self._raw_orientations, out=f_raw_orientations)
+            io_utils.save_orientations(self._raw_orientations, out=f_raw_orientations)
             d["raw_orientations"] = f_raw_orientations
         self.metadata.Processing["datfiles"] = d
         super().save(filename=filename)
@@ -392,3 +404,11 @@ class serialED(pc.ElectronDiffraction):
         new._orientations = copy.copy(self._orientations)
         new._props_collection = copy.copy(self._props_collection)
         return new
+
+    def select(self, i, j):
+        """Select part of the data set for processing, from row i to j"""
+        signal_dict = self._to_dictionary(add_learning_results=False)
+        signal_dict['data'] = self.data[i:j]
+        signal_dict["axes"][0]["size"] = j-i
+        signal_dict["axes"][0]["offset"] = i
+        return self.__class__(**signal_dict)

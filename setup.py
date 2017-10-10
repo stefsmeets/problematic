@@ -44,5 +44,12 @@ setup(
         "": ["LICENCE",  "readme.md", "setup.py"],
     },
 
+    entry_points={
+        'console_scripts': [
+            # main
+            'problematic.index = problematic.indexer_app:main',
+        ]
+    }
+
 )
 

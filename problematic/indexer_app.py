@@ -9,36 +9,14 @@ from .indexer import *
 from tqdm import tqdm
 import logging
 
-from .tools import get_files, ProgressBar
-from .formats.csvIO import yaml_ordered_load
+from .tools import get_files
 
-__version__ = "2017-03-09"
-__author__ = "Stef Smeets"
-__email__ = "stef.smeets@mmk.su.se"
+import yaml
 
+import serialED
 
-TEMPLATE = """title: indexing
-experiment:
-  pixelsize: 0.003957
-projections:
-  dmax: 10.0
-  dmin: 1.0
-  thickness: 100
-cell:
-  name: LTA
-  params:
-  - 24.61
-  - 24.61
-  - 24.61
-  - 90
-  - 90
-  - 90
-  spgr: Fm-3c
-data:
-  csv_out: results.csv
-  drc_out: indexing
-  files: stream.txt
-"""
+from hyperspy.defaults_parser import preferences
+preferences.General.nb_progressbar = False
 
 
 def copy_template():
@@ -78,22 +56,17 @@ def multi_run(arg, procs=1, dry_run=False, logfile=None):
     import subprocess as sp
     from multiprocessing import cpu_count
 
-    d = yaml_ordered_load(sys.argv[1])
+    d = yaml.load(open(arg, "r"))
 
-    file_pat  = d["data"]["files"]
-    csv_out   = d["data"]["csv_out"]
+    path    = d["data"]["path"]
+    csv_out = d["data"]["csv_out"]
 
-    fns = get_files(file_pat)
+    ed = serialED.load(path)
+    nfiles = ed.data.shape[0]
 
-    nfiles = len(fns)
     print("Found {} files".format(nfiles))
 
-    csv_outs = []
-    for i in range(procs):
-        print(" Chunk #{}: {} files".format(i, len(fns[i::procs])))
-        root, ext = os.path.splitext(csv_out)
-        csv_outs.append("{}_{}{}".format(root, i, ext))
-    print()
+    n = nfiles // procs + 1
 
     cores = cpu_count()
 
@@ -109,7 +82,7 @@ def multi_run(arg, procs=1, dry_run=False, logfile=None):
 
     print('Starting processes...')
     for i in range(procs):
-        cmd = "instamatic.index.exe {} -c {} {}".format(arg, i, procs)
+        cmd = "problematic.index.exe {} -c {} {}".format(arg, i, n)
         if logfile:
             cmd += " --logfile {}".format(logfile)
 
@@ -125,20 +98,15 @@ def multi_run(arg, procs=1, dry_run=False, logfile=None):
 
     if dry_run:
         return
-   
-    pb = ProgressBar()
+    
+    from collections import deque
+    d = deque(("|", "\\", "-", "/"))
     while any(p.poll() == None for p in processes):
-        pb.loop()
-    pb.clear()
+        d.rotate()
+        print("Running... {}".format(d[0]), end="\r")
+        time.sleep(1)
 
     t2 = time.time()
-
-    all_results = read_csv(csv_outs)
-    all_results = all_results.sort_values(by="score", ascending=False)
-    for csv in csv_outs:
-        os.unlink(csv)
-    write_ycsv(csv_out, data=all_results, metadata=d)
-    print("Writing results to {}".format(csv_out))
 
     print("Time taken: {:.0f} s / {:.1f} s per image".format(t2-t1, (t2-t1)/nfiles))
     print()
@@ -149,20 +117,23 @@ def run(arg, chunk=None, dry_run=False, log=None):
     log = log or logging.getLogger(__name__)
 
     if len(sys.argv) == 1:
-        print("Usage: instamatic.index indexing.inp")
+        print("Usage: problematic.index indexing.inp")
         print()
         print("Example input file:")
         print() 
         print(TEMPLATE)
         exit()
 
-    d = yaml_ordered_load(arg)
-
-    pixelsize = d["experiment"]["pixelsize"]
+    d = yaml.load(open(arg, "r"))
     
-    files     = d["data"]["files"]
+    path     = d["data"]["path"]
     csv_out   = d["data"]["csv_out"]
     drc_out   = d["data"]["drc_out"]
+
+    beam_center_sigma = 19
+
+    if not "instructions" in d:
+        d["instructions"] = {}
 
     method      = d["instructions"].get("method", "powell")
     radius      = d["instructions"].get("radius", 3)
@@ -172,8 +143,6 @@ def run(arg, chunk=None, dry_run=False, log=None):
     vary_scale  = d["instructions"].get("vary_scale", True)
     vary_center = d["instructions"].get("vary_center", True)
 
-    digitize = False
-
     d["instructions"]["method"]     = method
     d["instructions"]["radius"]     = radius
     d["instructions"]["nsolutions"] = nsolutions
@@ -182,82 +151,62 @@ def run(arg, chunk=None, dry_run=False, log=None):
     d["instructions"]["vary_scale"] = vary_scale
     d["instructions"]["vary_center"]= vary_center
 
+    pixelsize = d["experiment"]["pixelsize"]
+    dmin = d["projections"]["dmin"]
+    dmax = d["projections"]["dmax"]
+    thickness = d["projections"]["thickness"]
+    
     if isinstance(d["cell"], (tuple, list)):
         pixelsize = d["experiment"]["pixelsize"]
         indexer = IndexerMulti.from_cells(d["cell"], pixelsize=pixelsize, **d["projections"])
     else:
-        projector = Projector.from_parameters({**d["cell"], **d["projections"]})
-        indexer = Indexer.from_projector(projector, pixelsize=d["experiment"]["pixelsize"])
+        spgr = d["cell"]["spgr"]
+        name = d["cell"]["name"]
+        params = d["cell"]["params"]
 
-    fns = get_files(files)
+        projector = Projector.from_parameters(params, spgr=spgr, name=name, dmin=dmin, dmax=dmax, thickness=thickness)
+        indexer = Indexer.from_projector(projector, pixelsize=pixelsize)
+
+    ed = serialED.load(path)
+    centers = ed._centers
 
     if chunk:
-        offset, cpu_count = chunk
-        root, ext = os.path.splitext(csv_out)
-        csv_out = "{}_{}{}".format(root, offset, ext)
-        fns = fns[offset::cpu_count]
-        prefix = "Chunk #{}: ".format(offset)
-    else:
-        prefix = ""
+        i, n = chunk
+        offset = i*n
+        print("Chunk #{}: from {} to {}".format(i, offset, offset+n))
+        ed = ed.select(offset, offset+n)
+        centers = centers.__class__(centers.data[offset:offset+n])
 
-    nfiles = len(fns)
-    print("Found {} files".format(nfiles))
+    nfiles = ed.data.shape[0]
 
     if not os.path.exists(drc_out):
         os.mkdir(drc_out)
+
+    orientations = ed.find_orientations(indexer, centers)
     
-    all_results = {}
+    t0 = time.time()
+
+    refined_orientations = ed.refine_orientations(indexer, orientations)
     
-    t = tqdm(fns, desc=fns[0])
+    t1 = time.time()
 
-    for i, fn in enumerate(t):
-        # print "{}/{}: {}".format(i, nfiles, fn), 
-        t.set_description(fn)
-        t.update()
+    intensities = ed.extract_intensities(orientations=refined_orientations, indexer=indexer, outdir=drc_out)
 
-        f = h5py.File(fn)
+    ed.export_indexing_results()
 
-        data = np.array(f["data"]).astype(int)
-        data = np.clip(data, 0, data.max())
-        center = np.array(f["peakinfo/beam_center"])
-        if digitize:
-            digi_threshold = 1
-            data = np.digitize(data, (digi_threshold,)).astype(data.dtype)
-
-        results = indexer.index(data, center, nsolutions=nsolutions, filter1d=filter1d, nprojs=nprojs)
-
-        # refined = indexer.refine_all(data, results, sort=True, method=method, vary_center=vary_center, vary_scale=vary_scale)
-
-        best = results[0]
-
-        # indexer.probability_distribution(data, best)
-
-        all_results[fn] = best
-            
-        hklie = indexer.get_intensities(data, best, radius=radius)
-
-        root, ext = os.path.splitext(os.path.basename(fn))
-        out = os.path.join(drc_out, root+".hkl")
-
-        np.savetxt(out, hklie, fmt="%4d%4d%4d %7.1f %7.1f")
-
-        log.info("%s%d/%d %s -> %7.0f", prefix, i, nfiles, fn, best.score)
-
-    if chunk:
-        write_csv(csv_out, all_results)
-    else:
-        write_ycsv(csv_out, data=all_results, metadata=d)
-
-    print("Writing results to {}".format(csv_out))
-    
-    time_taken = t.last_print_t - t.start_t
-    msg = "Time taken: {:.0f} s / {:.1f} s per image".format(time_taken, (time_taken)/nfiles)
-    print(msg)
+    time_taken1 = t1 - t0
+    time_taken2 = time.time() - t1
+    msg1 = "Orientation finding:  {:.0f} s / {:.1f} s per image".format(time_taken1, (time_taken1)/nfiles)
+    msg2 = "Orientation refining: {:.0f} s / {:.1f} s per image".format(time_taken2, (time_taken2)/nfiles)
+    print()
+    print(msg1)
+    print(msg2)
     print()
     print(" >> DONE <<")
 
     log.info(projector._get_projection_alpha_beta_cache.cache_info())
-    log.info(msg)
+    log.info(msg1)
+    log.info(msg2)
 
 
 def main():
@@ -268,13 +217,9 @@ Program for indexing electron diffraction images.
 
 """ 
     
-    epilog = 'Updated: {}'.format(__version__)
-    
     parser = argparse.ArgumentParser(#usage=usage,
                                     description=description,
-                                    epilog=epilog, 
-                                    formatter_class=argparse.RawDescriptionHelpFormatter,
-                                    version=__version__)
+                                    formatter_class=argparse.RawDescriptionHelpFormatter)
     
     parser.add_argument("args", 
                         type=str, metavar="FILE", nargs="?",
