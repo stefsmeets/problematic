@@ -34,6 +34,10 @@ Correct for the lens distortion:
     stretch_amplitude = 2.43
     processed = processed.apply_stretch_correction(azimuth=stretch_azimuth, amplitude=stretch_amplitude, centers=centers)
 
+Use interactive peak finder (use `regionprops` to find ideal parameters for next function):
+
+    processed.find_peaks_interactive(imshow_kwargs={"vmax":300, "cmap":"gray"})
+
 Find regions of connected pixels and clean images:
 
     min_sigma=2
@@ -79,13 +83,13 @@ Merge intensities from best 50 orientations using serialmerge algorithm:
 
     m = serialED.serialmerge_intensities(intensities, orientations, n=50)
 
-Save all data:
+Save all data in `hdf5` format:
 
     processed.save("processed.hdf5")
 
 Load all data:
 
-    processed = processed.load("processed.hdf5")
+    processed = serialED.load("processed.hdf5")
 
 ## Requirements
 
@@ -93,6 +97,18 @@ Load all data:
 - PyCrystEM
 - HyperSpy
 - ...
+
+## Install using Conda
+
+    Get miniconda from https://conda.io/miniconda.html (Python3.6)
+
+    conda install hyperspy -c conda-forge
+    conda install --channel matsci pymatgen
+	conda install cython
+    pip install transforms3d
+    pip install https://github.com/pycrystem/pycrystem/archive/master.zip
+    pip install https://github.com/stefsmeets/problematic/archive/master.zip
+
 
 ## Installation
 
