@@ -18,6 +18,9 @@ import pandas as pd
 
 from skimage import morphology
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 def get_intensities(img, result, projector, radius=1):
     """

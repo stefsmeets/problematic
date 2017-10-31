@@ -9,12 +9,12 @@ import numpy as np
 
 if sys.platform == "win32":
     extensions = [
-        Extension('problematic.radialprofile', ['src/radialprofile_cy.pyx'], include_dirs=[np.get_include()]),
+        # Extension('problematic.radialprofile', ['src/radialprofile_cy.pyx'], include_dirs=[np.get_include()]),
         Extension('problematic.get_score_cy', ['src/get_score_cy.pyx'], include_dirs=[np.get_include()]),
         ]
 else:
     extensions = [
-        Extension('problematic.radialprofile', ['src/radialprofile_cy.pyx'], include_dirs=[np.get_include()]),
+        # Extension('problematic.radialprofile', ['src/radialprofile_cy.pyx'], include_dirs=[np.get_include()]),
         Extension('problematic.get_score_cy', ['src/get_score_cy.pyx'], include_dirs=[np.get_include()]),
 
     ]
@@ -38,7 +38,7 @@ setup(
 
     packages=["problematic",],
 
-    install_requires=["numpy", "scikit-image", "pyyaml", "lmfit"],
+    install_requires=["numpy", "scipy", "pandas", "scikit-image", "pyyaml", "lmfit", "cython", "h5py"],
 
     package_data={
         "": ["LICENCE",  "readme.md", "setup.py"],

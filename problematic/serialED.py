@@ -10,12 +10,14 @@ from stretch_correction import apply_stretch_correction
 import io_utils
 
 
-def im_reconstruct(props, shape=None):
+def im_reconstruct(props, shape=None, clip=True):
     """Takes a list of regionprops and reconstructs an image with the given shape"""
     z = np.zeros(shape)
     for prop in props:
         x0,y0,x1,y1 = prop.bbox
         z[x0:x1, y0:y1] = prop.intensity_image
+    if clip:
+        z = np.clip(z, 0, z.max())
     return z
 
 
@@ -25,7 +27,9 @@ def load(filepat):
 
     returns serialED object
     """
-    if os.path.exists(filepat):
+    if isinstance(filepat, (list, tuple)):
+        signal = hdf5_to_hyperspy(filepat)
+    elif os.path.exists(filepat):
         root, ext = os.path.splitext(filepat)
         if ext.lower() == ".ycsv":
             df, d = io_utils.read_ycsv(filepat)
@@ -37,8 +41,6 @@ def load(filepat):
             f = open(filepat, "r")
             fns = [line.split("#")[0].strip() for line in f if not line.startswith("#")]
             signal = hdf5_to_hyperspy(fns)
-    elif isinstance(filepat, (list, tuple)):
-        signal = hdf5_to_hyperspy(filepat)
     else:
         fns = glob.glob(filepat)
         signal = hdf5_to_hyperspy(fns)
