@@ -242,7 +242,7 @@ def load_numpy_arrays(data):
 
 def serialmerge(data, remove_0_reflections=True, fout="merged.hkl", verbose=False):
     if isinstance(data, (list, tuple)) and isinstance(data[0], str):
-        dfx = load_hkl_files(fns)
+        dfx = load_hkl_files(data)
 
     elif isinstance(data, (list, tuple)) and isinstance(data[0], np.ndarray):
         dfx = load_numpy_arrays(data)

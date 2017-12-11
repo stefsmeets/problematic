@@ -199,6 +199,8 @@ class Projector(object):
             print("    max(u,v,w):", self.repl.max(axis=0))
             print("    Thickness: {}".format(thickness))
             print("    Wavelength: {}".format(wavelength))
+
+        self.USE_CACHE = False
         
     @classmethod
     def from_parameters(cls, params=None, spgr=None, name=None, composition=None, **kwargs):
@@ -219,7 +221,7 @@ class Projector(object):
             "cell": c
             }
 
-    def get_projection(self, alpha, beta, gamma=0, use_cache=True):
+    def get_projection(self, alpha, beta, gamma=0, use_cache=False):
         """Get projection along a particular zone axis
 
         alpha, beta: float
@@ -229,7 +231,9 @@ class Projector(object):
 
         Returns array (5, n):
             5-column array hkl indices and xy coordinates in reciprocal coordinates
-        """ 
+        """
+
+        use_cache = self.USE_CACHE
 
         if use_cache:
             proj = self._get_projection_alpha_beta_cache(alpha, beta)

@@ -138,7 +138,7 @@ cpdef float get_score_shape(np.ndarray[INT_t, ndim=2] img, np.ndarray[DOUBLE_t, 
     cdef int nrows = pks.shape[0]
 
     cdef int i,j
-    cdef float score = 0
+    cdef float score = 0.0
 
     cdef int nfail = 0
     cdef int nfit = 0
@@ -167,6 +167,8 @@ cpdef float get_score_shape(np.ndarray[INT_t, ndim=2] img, np.ndarray[DOUBLE_t, 
         if item > thresh:
             score = score + item * pks[n, 2]
             nfit += 1
+            
+    # print(score, nfit, nrows, nfail)
 
     return score * nfit / (nrows - nfail)
 

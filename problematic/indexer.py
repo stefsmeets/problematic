@@ -364,7 +364,7 @@ class Indexer(object):
         center_x = result.center_x
         center_y = result.center_y
 
-        proj = projector.get_projection(alpha, beta, gamma)[3:6]
+        proj = projector.get_projection(alpha, beta, gamma)[:,3:6]
 
         score  = get_score_shape(img, proj, scale, center_x, center_y)
 
