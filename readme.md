@@ -20,18 +20,18 @@ Show data:
 
 Find the position of the direct beam:
 
-    beam_center_sigma = 10
+    beam_center_sigma = 10       # sigma of the gaussian kernel
     centers = ed.get_direct_beam_position(sigma=beam_center_sigma)
 
 Remove the background:
 
-    background_footprint = 19
+    background_footprint = 19    # window for the median filter
     processed = ed.remove_background(footprint=background_footprint)
 
-Correct for the lens distortion:
+Correct for the (elliptical) lens distortion:
 
-    stretch_azimuth = -6.61
-    stretch_amplitude = 2.43
+    stretch_azimuth = -6.61      # orientation of the major axis of the ellipse
+    stretch_amplitude = 2.43     # percent difference between the major/minor axes
     processed = processed.apply_stretch_correction(azimuth=stretch_azimuth, amplitude=stretch_amplitude, centers=centers)
 
 Use interactive peak finder (use `regionprops` to find ideal parameters for next function):
@@ -40,20 +40,21 @@ Use interactive peak finder (use `regionprops` to find ideal parameters for next
 
 Find regions of connected pixels and clean images:
 
-    min_sigma=2
-    max_sigma=5
-    threshold=1
-    min_size=30
+    min_sigma=2               # sigma of the minimum gaussian filter
+    max_sigma=5               # sigma of the maximum gaussian filter
+    threshold=1               # minimum intensity threshold for a peak
+    min_size=30               # minimum number of pixels for a peak
     processed = processed.find_peaks_and_clean_images(min_sigma=min_sigma, max_sigma=max_sigma, 
                                                       threshold=threshold, min_size=min_size)
 
 Generate indexer object:
 
-    name = "FAU"
-    pixelsize = 0.00433
-    dmin, dmax = 1.0, 10.0
-    params = (24.3450,)
-    spgr = "Fd-3m"
+    name = "FAU"              # name of the phase
+    pixelsize = 0.00433       # pixel per Angstrom
+    dmin, dmax = 1.0, 10.0    # Angstrom
+    thickness = 100           # nm used to estimate the width of the reflections (max. excitation error)
+    params = (24.3450,)       # cell parameters
+    spgr = "Fd-3m"            # space group
     projector = Projector.from_parameters(params, spgr=spgr, name=name, dmin=dmin, dmax=dmax, thickness=thickness)
     indexer = Indexer.from_projector(projector, pixelsize=pixelsize)
 
@@ -94,25 +95,23 @@ Load all data:
 ## Requirements
 
 - Python3.6
-- PyCrystEM
+- PyXem
 - HyperSpy
 - ...
 
 ## Install using Conda
 
-    Get miniconda from https://conda.io/miniconda.html (Python3.6)
+Get miniconda from https://conda.io/miniconda.html (Python3.6)
 
     conda install hyperspy -c conda-forge
     conda install --channel matsci pymatgen
-	conda install cython
+    conda install cython
     pip install transforms3d
-    pip install https://github.com/pycrystem/pycrystem/archive/master.zip
+    pip install https://github.com/pyxem/pyxem/archive/master.zip
     pip install https://github.com/stefsmeets/problematic/archive/master.zip
-
 
 ## Installation
 
 Using pip:
 
     pip install https://github.com/stefsmeets/problematic/archive/master.zip
-
