@@ -1,8 +1,16 @@
 # problematic
 
-Program for processing serial electron diffracton data collected using [instamatic](http://github.com/stefsmeets/instamatic).
+Collection of routines for processing serial electron diffracton data collected using [instamatic](http://github.com/stefsmeets/instamatic).
 
 ## Usage
+
+Generate an example input (`indexing_template.ipynb`) using:
+
+    problematic.index --template
+
+Open the notebook using:
+    
+     jupyter notebook
 
 Imports:
 
