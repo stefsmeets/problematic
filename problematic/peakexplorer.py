@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import display
 
-# Based on: https://github.com/pycrystem/pycrystem/blob/master/pycrystem/utils/peakfinder2D_gui.py
+# Based on: https://github.com/pyxem/pyxem/blob/master/pyxem/utils/peakfinder2D_gui.py
 
 class PeakExplorerBase:
 

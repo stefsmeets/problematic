@@ -1,7 +1,7 @@
 import glob
 import h5py as h5
 import hyperspy.api as hs
-import pycrystem as pc
+import pyxem as pxm
 import os, sys
 import numpy as np
 
@@ -35,7 +35,7 @@ def hdf5_to_hyperspy(fns):
     finally:
         f.close()
 
-    ed = pc.ElectronDiffraction(dat)
+    ed = pxm.ElectronDiffraction(dat)
     ed.metadata["General"]["title"] = "serialED"
     ed.axes_manager[0].name = "frame"
     ed.axes_manager[1].name = "X"

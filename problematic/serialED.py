@@ -1,7 +1,7 @@
-import pycrystem as pc
+import pyxem as pxm
 import hyperspy.api as hs
 from hdf5_to_hyperspy import hdf5_to_hyperspy
-from pycrystem.utils.peakfinders2D import find_peaks_regionprops
+from pyxem.utils.peakfinders2D import find_peaks_regionprops
 import os, sys
 import numpy as np
 import glob
@@ -63,7 +63,7 @@ def serialmerge_intensities(intensities, orientations, n=25):
     return m
 
 
-class serialED(pc.ElectronDiffraction):
+class serialED(pxm.ElectronDiffraction):
 
     _props_collection = []
     _centers = []
@@ -88,7 +88,7 @@ class serialED(pc.ElectronDiffraction):
         d = {"sigma": sigma,
         "method": method,
         "date": str(datetime.datetime.now()),
-        "func": "pycrystem.ElectronDiffraction.get_direct_beam_position" }
+        "func": "pyxem.ElectronDiffraction.get_direct_beam_position" }
         self.metadata.Processing["get_direct_beam_position"] = d
 
         centers = super().get_direct_beam_position(method=method, sigma=sigma, inplace=False)
@@ -114,7 +114,7 @@ class serialED(pc.ElectronDiffraction):
 
         return self.map(apply_stretch_correction, azimuth=azimuth, amplitude=amplitude, center=centers, inplace=inplace)
 
-    def remove_background(self, footprint=19, inplace=False):
+    def remove_background(self, footprint=19):
         """Removes the background of each frame using a median filter
 
         footprint:
@@ -127,10 +127,10 @@ class serialED(pc.ElectronDiffraction):
         d = {"footprint": footprint,
         "method": method,
         "date": str(datetime.datetime.now()),
-        "func": "pycrystem.ElectronDiffraction.remove_background" }
+        "func": "pyxem.ElectronDiffraction.remove_background" }
         self.metadata.Processing["remove_background"] = d
 
-        return super().remove_background(method=method, footprint=footprint, inplace=inplace)
+        return super().remove_background(method=method, footprint=footprint)
 
     def find_peaks_and_clean_images(self, min_sigma=4, max_sigma=5, threshold=1, min_size=50, inplace=False):
         """Find regions of connected pixels using regionprops method, and use those to remove noise
@@ -157,7 +157,7 @@ class serialED(pc.ElectronDiffraction):
         "threshold": threshold,
         "min_size": min_size,
         "date": str(datetime.datetime.now()),
-        "func": "pycrystem.utils.peakfinders2D.find_peaks_regionprops" }
+        "func": "pyxem.utils.peakfinders2D.find_peaks_regionprops" }
 
         props_collection = self.map(find_peaks_regionprops, 
                              min_sigma=min_sigma, max_sigma=max_sigma, 
