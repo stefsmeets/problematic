@@ -5,6 +5,25 @@ import numpy as np
 import hyperspy.api as hs
 
 
+def get_files(file_pat):
+    """Grab files from globbing pattern or stream file"""
+    if os.path.exists(file_pat):
+        root, ext = os.path.splitext(file_pat)
+        if ext.lower() == ".ycsv":
+            df, d = read_ycsv(file_pat)
+            fns = df.index.tolist()
+        else:
+            f = open(file_pat, "r")
+            fns = [line.split("#")[0].strip() for line in f if not line.startswith("#")]
+    else:
+        fns = glob.glob(file_pat)
+
+    if len(fns) == 0:
+        raise IOError("No files matching '{}' were found.".format(file_pat))
+
+    return fns
+
+
 def save_orientations(orientations, out="orientations.npy"):
     np.save(out, orientations.data)
 
@@ -62,6 +81,7 @@ def read_ycsv(f):
     # print "".join(yaml_block)
     
     return df, d
+
 
 def write_ycsv(f, data, metadata):
     """

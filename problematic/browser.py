@@ -5,8 +5,6 @@ import numpy as np
 
 import h5py
 
-from IPython import embed
-
 import argparse
 import tqdm
 
@@ -226,8 +224,7 @@ Program for indexing electron diffraction images.
     #                     help="Path to .csv with results from indexing")
 
     
-    parser.set_defaults(results=None,
-                        )
+    parser.set_defaults(results=None)
     
     options = parser.parse_args()
     arg = options.args
