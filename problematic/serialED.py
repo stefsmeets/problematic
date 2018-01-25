@@ -12,7 +12,7 @@ import io_utils
 
 def im_reconstruct(props, shape=None, clip=True):
     """Takes a list of regionprops and reconstructs an image with the given shape"""
-    z = np.zeros(shape)
+    z = np.zeros(shape, dtype=np.int)
     for prop in props:
         x0,y0,x1,y1 = prop.bbox
         z[x0:x1, y0:y1] = prop.intensity_image

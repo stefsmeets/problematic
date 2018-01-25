@@ -5,10 +5,7 @@ cimport cython
 from cython.parallel import prange
 from libc.math cimport cos, sin
 
-INT = np.int
 ctypedef np.int_t INT_t
-
-DOUBLE = np.int
 ctypedef np.double_t DOUBLE_t
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
