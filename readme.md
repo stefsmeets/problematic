@@ -4,13 +4,21 @@ Collection of routines for processing serial electron diffracton data collected 
 
 ## Usage
 
-Generate an example input (`indexing_template.ipynb`) using:
+### Command line
+
+Visualize the data collected (both images and diffraction data) in a serial ED experiment:
+
+    problematic.browser images/image*.h5
+
+Data processing is done using IPython notebooks. To generate a template input file (named indexing_template.ipynb):
 
     problematic.index --template
 
-Open the notebook using:
-    
-     jupyter notebook
+The notebook can then be opened after the IPython notebook server has been started:
+
+    jupyter notebook
+
+### Python
 
 Imports:
 
