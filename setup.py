@@ -46,8 +46,8 @@ setup(
 
     entry_points={
         'console_scripts': [
-            # main
-            'problematic.index = problematic.indexer_app:main',
+            'problematic.index   = problematic.indexer_app:main',
+            'problematic.browser = problematic.browser:main',
         ]
     }
 
