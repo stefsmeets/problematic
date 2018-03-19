@@ -513,8 +513,8 @@ class SpaceGroup(object):
         self.hall = dct["hall"]
         self.spgr_name = self.hermann_mauguin = dct["hm"].replace(" ", "")
         self.schoenflies = dct["schoenfliess"]
-        self.qualif = dct["qualif"]
-        self.setting = dct["setting"]
+        self.qualif = dct["qualif"]   # R/H
+        self.setting = dct["setting"] # a/b/c
 
         self.isChiral = dct["chiral"]
         self.isEnantiomorphic = dct["enantiomorphic"]
@@ -581,6 +581,10 @@ class SpaceGroup(object):
         """Returns a generator with laue symmetry operations"""
         from laue_symops import symops
         lauegr = self.laue_group
+
+        if self.setting:
+            lauegr += f":{self.setting[0]}"
+
         return (SymOp.from_str(op) for op in symops[lauegr])
 
     @property

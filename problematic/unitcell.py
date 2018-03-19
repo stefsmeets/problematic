@@ -354,22 +354,22 @@ class UnitCell(SpaceGroup):
         find_block = '>Begin hklList.*?\n(.*?)>End hklList'
 
         cmd = [ 'sginfo', 
-            self.hermann_mauguin, 
+            self.space_group, 
             '-UnitCell={}'.format(" ".join([str(par) for par in self.parameters])),
             '-hklList={:d}'.format(hmax),
-         ]
+        ]
 
         if include_sysabs:
             cmd.append('-v')
 
-        p = sp.Popen(cmd, stdout=sp.PIPE)
+        p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.STDOUT)
         out, err = p.communicate()
         out = out.decode()
 
         refl_block = re.findall(find_block, out, re.S)
 
         if len(refl_block) != 1:
-            raise IOError("Could not find reflection block.")
+            raise IOError(f"Could not find reflection block (space group: {self.space_group}).")
 
         lines = refl_block[0].splitlines()
 

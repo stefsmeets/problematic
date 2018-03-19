@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from past.utils import old_div
-
 import subprocess as sp
 import re
 
 exe = "sginfo"
+
+class SpaceGroupError(NameError):
+    pass
+
 
 def get_transvec(string):
     transvec = []
@@ -17,7 +16,7 @@ def get_transvec(string):
             frac = val.split('/')
             num = float(frac[0])
             denom = float(frac[1])
-            transvec.append(old_div(num,denom))
+            transvec.append(num // denom)
         else:
             transvec.append(float(val))
     return transvec
@@ -26,7 +25,8 @@ get_centering = re.compile("\((.*)\)")
 
 def parse(spgr, verbose=False):
     cmd = [exe, spgr, '-allxyz']
-    p = sp.Popen(cmd, stdout=sp.PIPE)
+
+    p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.STDOUT)
     out, err = p.communicate()
 
     out = out.decode()
@@ -43,6 +43,10 @@ def parse(spgr, verbose=False):
 
     for line in out.splitlines():
         line = line.strip()
+
+        if line.startswith("sginfo: Error: Unknown Space Group Symbol"):
+            raise SpaceGroupError(f"No such space group '{spgr}'")
+
         if line.startswith("Space Group"):
             inp = line.split("  ")
             number = inp[1]
@@ -96,7 +100,7 @@ def parse(spgr, verbose=False):
             symops.append(line)
 
     cmd = [exe, spgr, '-Conditions']
-    p = sp.Popen(cmd, stdout=sp.PIPE)
+    p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.STDOUT)
     out, err = p.communicate()
 
     out = out.decode()
@@ -108,6 +112,11 @@ def parse(spgr, verbose=False):
     save_refl_phase = False
     save_refl_enh = False
     for line in out.splitlines():
+        line = line.strip()
+
+        if line.startswith("sginfo: Error: Unknown Space Group Symbol"):
+            raise SpaceGroupError(f"No such space group '{spgr}'")
+
         if line.startswith("Reflection conditions"):
             save_refl_cond = True
             continue
