@@ -1,5 +1,5 @@
 import glob
-import h5py as h5
+import h5py
 import hyperspy.api as hs
 import pyxem as pxm
 import os, sys
@@ -19,12 +19,12 @@ def hdf5_to_hyperspy(fns):
 
     dat = []
     for fn in fns:
-        f = h5.File(fn)
+        f = h5py.File(fn)
         dat.append(np.array(f["data"]))
         f.close()
     
     try:
-        f = h5.File(fn)
+        f = h5py.File(fn)
         pixelsize = f["data"].attrs["ImagePixelsize"]
     except KeyError:
         try:

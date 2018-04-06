@@ -3,7 +3,12 @@ import matplotlib.pyplot as plt
 import os, sys, glob
 import numpy as np
 
-import h5py
+import warnings
+with warnings.catch_warnings():
+    # TODO: remove me later
+    # Catch annoying futurewarning on import
+    warnings.simplefilter("ignore")
+    import h5py
 
 import argparse
 import tqdm

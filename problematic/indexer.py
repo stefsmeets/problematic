@@ -294,8 +294,6 @@ class Indexer(object):
         
         self.theta = theta
         
-        self.fit_tol = 0.1
-
         nprojections = len(self.projections)
         nrotations = int(2*np.pi/self.theta)
         print("{} projections x {} rotations = {} items\n".format(nprojections, nrotations, nprojections*nrotations))
@@ -389,7 +387,7 @@ class Indexer(object):
             x and y coordinates to the position of the primary beam
         """
         theta      = kwargs.get("theta", self.theta)
-        nsolutions = kwargs.get("nsolutions", 20)
+        nsolutions = kwargs.get("nsolutions", 25)
 
         phase = kwargs.get("phase", self.projector.cell.name)
 
@@ -415,11 +413,11 @@ class Indexer(object):
         
         heap = sorted(heap, reverse=True)[0:nsolutions]
         
-        results = [IndexingResult(score=score,
+        results = [IndexingResult(score=round(score, 2),
                                   number=n,
                                   alpha=round(self.infos[n].alpha, 4),
                                   beta=round(self.infos[n].beta, 4),
-                                  gamma=gamma,
+                                  gamma=round(gamma, 4),
                                   center_x=center_x,
                                   center_y=center_y,
                                   scale=round(scale, 4),
@@ -475,7 +473,7 @@ class Indexer(object):
         
         i, j, proj = get_indices(pks, scale, (center_x, center_y), img.shape, hkl=proj)
         
-        shape_factor = proj[:,5:6]
+        shape_factor = proj[:,5:6].reshape(-1)
         hkl = proj[:,0:3]
 
         if title:
@@ -518,7 +516,7 @@ class Indexer(object):
         else:
             return new_results
     
-    def refine(self, img, result, projector=None, verbose=True, method="least-squares", 
+    def refine(self, img, result, projector=None, verbose=True, method="least-squares", fit_tol=0.1,
                vary_center=True, vary_scale=True, vary_alphabeta=True, vary_gamma=True, **kwargs):
         """
         Refine the orientations of all solutions in results agains the given image
@@ -532,9 +530,13 @@ class Indexer(object):
             or if a different one should be used
         method: str, optional
             Minimization method to use, should be one of 'nelder', 'powell', 'cobyla', 'least-squares'
+        fit_tol: float
+            Tolerance for termination. For detailed control, use solver-specific options.
         """
         if not projector:
             projector = self.projector
+
+        f_kws = kwargs.get("kws", None)
         
         def objfunc(params, img):
             cx = params["center_x"].value
@@ -560,7 +562,7 @@ class Indexer(object):
         
         args = img,
 
-        res = lmfit.minimize(objfunc, params, args=args, method=method, tol=self.fit_tol)
+        res = lmfit.minimize(objfunc, params, args=args, method=method, tol=fit_tol, kws=f_kws)
 
         if verbose:
             lmfit.report_fit(res)

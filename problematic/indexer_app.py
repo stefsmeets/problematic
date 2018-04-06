@@ -9,7 +9,7 @@ from .indexer import *
 from tqdm import tqdm
 import logging
 
-from .tools import get_files
+from .io_utils import get_files
 
 import yaml
 

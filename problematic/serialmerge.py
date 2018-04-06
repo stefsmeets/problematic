@@ -282,7 +282,7 @@ def serialmerge(data, remove_0_reflections=True, fout="merged.hkl", verbose=Fals
         for i, row in m.iterrows():
             h,k,l = i
             print("{:4d}{:4d}{:4d}{:8.1f}{:8.1f}".format(h, k, l, row.val, 1.0), file=fout)
-        print("\n >> Wrote {} reflections to file {}".format(len(m), fout.name))
+        print("\nWrote {} reflections to file {}".format(len(m), fout.name))
 
     return m
 

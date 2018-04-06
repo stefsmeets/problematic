@@ -2,12 +2,17 @@ import pyxem as pxm
 import hyperspy.api as hs
 from hdf5_to_hyperspy import hdf5_to_hyperspy
 from pyxem.utils.peakfinders2D import find_peaks_regionprops
+from pyxem.utils.expt_utils import find_beam_position_blur
 import os, sys
 import numpy as np
+from scipy.interpolate import interp1d
 import glob
 import datetime
 from stretch_correction import apply_stretch_correction
 import io_utils
+
+from .io_utils import save_orientations
+from .io_utils import load_orientations
 
 
 def im_reconstruct(props, shape=None, clip=True):
@@ -47,7 +52,7 @@ def load(filepat):
     return serialED(**signal._to_dictionary())
 
 
-def serialmerge_intensities(intensities, orientations, n=25):
+def serialmerge_intensities(intensities, orientations, n=25, fout="merged.hkl"):
     """Use serialmerge to merge intensities from best n orientations"""
     import pandas as pd
     from serialmerge import serialmerge
@@ -59,8 +64,49 @@ def serialmerge_intensities(intensities, orientations, n=25):
     
     hklies = np.take(intensities.data, ix, axis=0).tolist()
     
-    m = serialmerge(hklies, verbose=True)
+    m = serialmerge(hklies, verbose=True, fout=fout)
     return m
+
+
+def match_histogram(data, histogram, fout=None):
+    """Match the intensity distribution in the merged data to a pre-calculated histogram
+
+    data: str
+        hkl file (h,k,l,f,sigma)
+    histogram: str
+        hkl file (h,k,l,f, [sigma]) with reference histogram
+    fout: str
+        Optional argument to specify an output filename. If not specified,
+        the input file will be overwritten
+    """
+    
+    if isinstance(histogram, str):
+        histogram = np.loadtxt(histogram)[:,3]
+    
+    if isinstance(data, str):
+        if not fout:
+            fout = data
+        hklf = np.loadtxt(data)
+    
+    histogram.sort()
+    histogram = histogram[::-1]
+
+    x  = np.linspace(0, 100, len(histogram))
+    f = interp1d(x, histogram)
+
+    xi = np.linspace(0, 100, len(hklf))
+    yi = f(xi)
+    
+    if fout:
+        hklf[:,3] = yi
+
+        fout = open(fout, "w")
+        for row in hklf:
+            h, k, l, val, sigma = row
+            print("{:4.0f}{:4.0f}{:4.0f}{:8.1f}{:8.1f}".format(h, k, l, val, 1.0), file=fout)
+        print("\nWrote {} reflections to file {}".format(len(hklf), fout.name))
+    else:
+        return yi
 
 
 class serialED(pxm.ElectronDiffraction):
@@ -91,7 +137,7 @@ class serialED(pxm.ElectronDiffraction):
         "func": "pyxem.ElectronDiffraction.get_direct_beam_position" }
         self.metadata.Processing["get_direct_beam_position"] = d
 
-        centers = super().get_direct_beam_position(method=method, sigma=sigma, inplace=False)
+        centers = self.map(find_beam_position_blur, sigma=sigma, inplace=False)
         self._centers = centers
         return centers
 
@@ -217,8 +263,8 @@ class serialED(pxm.ElectronDiffraction):
         self._raw_orientations = orientation_collection
         return orientation_collection
 
-    def refine_orientations(self, indexer, orientation_collection, sort=True, method="powell", 
-                            vary_scale=True, vary_center=True, vary_alphabeta=True):
+    def refine_orientations(self, indexer, orientation_collection, sort=True, method="powell", fit_tol=0.1,
+                            vary_scale=True, vary_center=True, vary_alphabeta=True, **kwargs):
         """Refine the orientations obtained using serialED.find_orientations
 
         indexer: indexer.Indexer
@@ -262,7 +308,7 @@ class serialED(pxm.ElectronDiffraction):
 
         orientation_collection = self.map(indexer.refine_all, results=orientation_collection, sort=sort, method=method, 
                                           vary_scale=vary_scale, vary_center=vary_center, vary_alphabeta=vary_alphabeta, 
-                                          parallel=False, inplace=False)
+                                          parallel=False, inplace=False, **kwargs)
         self._orientations = orientation_collection
         return orientation_collection
 
@@ -338,23 +384,40 @@ class serialED(pxm.ElectronDiffraction):
         intensities_collection = self.map(func, orientations=orientations, indexer=indexer, inplace=False)
 
         if outdir:
+            if not os.path.exists(outdir):
+                os.makedirs(outdir)
             for i, intensities in enumerate(intensities_collection.data):
                 out = os.path.join(outdir, "intensities_{:05d}.hkl".format(i))
                 np.savetxt(out, intensities, fmt="%4d%4d%4d %7.1f %7.1f")
 
         return intensities_collection
 
-    def export_indexing_results(s, fname="orientations.ycsv"):
+    def export_indexing_results(self, fname="orientations.ycsv", **kwargs):
         """Export the indexing results to a ycsv file"""
         import pandas as pd
         import yaml
-        d = s.metadata.Processing["find_orientations"].as_dictionary()
-        d["title"] = s.metadata.General["title"]
+
+        orientations = kwargs.get("orientations", None)
+
+        if "refine_orientations" in self.metadata.Processing:
+            d = self.metadata.Processing["refine_orientations"].as_dictionary()
+            if not orientations:
+                orientations =  self._orientations
+        elif "find_orientations" in self.metadata.Processing:
+            d = self.metadata.Processing["find_orientations"].as_dictionary()
+            if not orientations:
+                orientations = self._raw_orientations
+        else:
+            raise AttributeError("Please run .find_orientations or .refine_orientations first")
+
+        df = pd.DataFrame([ori[0] for ori in orientations.data])
+
+        d["title"] = self.metadata.General["title"]
         try:
-            d["data"] = {"outdir": s.metadata.Processing["extract_intensities"]["outdir"] }
+            d["data"] = {"outdir": self.metadata.Processing["extract_intensities"]["outdir"] }
         except (KeyError, AttributeError):
             d["data"] = None
-        df = pd.DataFrame([ori[0] for ori in s._orientations.data])
+
         io_utils.write_ycsv(fname, data=df, metadata=d)
 
     def load_extras(self):

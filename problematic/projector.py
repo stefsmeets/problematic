@@ -376,9 +376,6 @@ class Projector(object):
     def generate_all_projections(self):
         """Generates all vectors with a separation of phistep/psistep
 
-        phistep, psistep: float
-            Angle separation in radians between polar coordinates of normals to projections
-
         Returns projections, infos: list, list
             Projections is a list of hkl and xy coordinates in reciprocal coordinates
             Infos is a list of accompanying data, such as the number, and alpha/beta angle in radians
