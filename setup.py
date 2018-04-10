@@ -42,7 +42,10 @@ setup(
 
     package_data={
         "": ["LICENCE",  "readme.md", "setup.py"],
+        "problematic.orientations": ["*"]
     },
+
+    include_package_data=True,
 
     entry_points={
         'console_scripts': [
