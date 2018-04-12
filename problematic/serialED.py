@@ -1,9 +1,12 @@
-import pyxem as pxm
 import hyperspy.api as hs
 from hdf5_to_hyperspy import hdf5_to_hyperspy
-from pyxem.utils.peakfinders2D import find_peaks_regionprops
-from pyxem.utils.expt_utils import find_beam_position_blur
-import os, sys
+# from pyxem.utils.peakfinders2D import find_peaks_regionprops
+from .peakfinders2d import find_peaks_regionprops
+from .peakfinders2d_gui import PeakFinderUIIPYW
+# from pyxem.utils.expt_utils import find_beam_position_blur
+from .utils import find_beam_position_blur
+import os
+from hyperspy.signals import Signal2D
 import numpy as np
 from scipy.interpolate import interp1d
 import glob
@@ -109,7 +112,7 @@ def match_histogram(data, histogram, fout=None):
         return yi
 
 
-class serialED(pxm.ElectronDiffraction):
+class serialED(Signal2D):
 
     _props_collection = []
     _centers = []
@@ -134,7 +137,7 @@ class serialED(pxm.ElectronDiffraction):
         d = {"sigma": sigma,
         "method": method,
         "date": str(datetime.datetime.now()),
-        "func": "pyxem.ElectronDiffraction.get_direct_beam_position" }
+        "func": "utils.find_beam_position_blur" }
         self.metadata.Processing["get_direct_beam_position"] = d
 
         centers = self.map(find_beam_position_blur, sigma=sigma, inplace=False)
@@ -168,15 +171,16 @@ class serialED(pxm.ElectronDiffraction):
 
         Returns:
             serialED(BaseSignal2D)"""
+        from .utils import subtract_background_median
 
         method = "median"
         d = {"footprint": footprint,
         "method": method,
         "date": str(datetime.datetime.now()),
-        "func": "pyxem.ElectronDiffraction.remove_background" }
+        "func": "utils.subtract_background_median" }
         self.metadata.Processing["remove_background"] = d
 
-        return super().remove_background(method=method, footprint=footprint)
+        return self.map(subtract_background_median, inplace=False, footprint=footprint)
 
     def find_peaks_and_clean_images(self, min_sigma=4, max_sigma=5, threshold=1, min_size=50, inplace=False):
         """Find regions of connected pixels using regionprops method, and use those to remove noise
@@ -203,7 +207,7 @@ class serialED(pxm.ElectronDiffraction):
         "threshold": threshold,
         "min_size": min_size,
         "date": str(datetime.datetime.now()),
-        "func": "pyxem.utils.peakfinders2D.find_peaks_regionprops" }
+        "func": "peakfinders2d.find_peaks_regionprops" }
 
         props_collection = self.map(find_peaks_regionprops, 
                              min_sigma=min_sigma, max_sigma=max_sigma, 
@@ -218,6 +222,15 @@ class serialED(pxm.ElectronDiffraction):
         self.metadata.Processing["find_peaks_and_clean_images"] = d
 
         return self.map(im_reconstruct_func, props=props_collection, inplace=inplace)
+
+    def find_peaks_interactive(self, imshow_kwargs={}):
+        """Find peaks using an interactive tool.
+
+        Requires `ipywidgets` and `traitlets` to be installed.
+
+        """
+        peakfinder = PeakFinderUIIPYW(imshow_kwargs=imshow_kwargs)
+        peakfinder.interactive(self)
 
     def find_orientations(self, indexer, centers, nsolutions=25, filter1d=False, nprojs=100):
         """Find the orientations for all the images using a brute force forward projection method

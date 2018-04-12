@@ -146,7 +146,6 @@ processed = serialED.load("processed.hdf5")
 ## Requirements
 
 - Python3.6
-- [PyXem](https://github.com/pyxem/pyxem/)
 - [HyperSpy](http://hyperspy.org/)
 - [sginfo](http://cci.lbl.gov/sginfo/) must be available as `sginfo` on the search path
 - ...
@@ -156,10 +155,6 @@ processed = serialED.load("processed.hdf5")
 Get miniconda from https://conda.io/miniconda.html (Python3.6)
 
     conda install hyperspy -c conda-forge
-    conda install --channel matsci pymatgen
-    conda install cython
-    pip install transforms3d
-    pip install https://github.com/pyxem/pyxem/archive/master.zip
     pip install https://github.com/stefsmeets/problematic/archive/master.zip
 
 ## Installation
