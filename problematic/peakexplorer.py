@@ -24,7 +24,9 @@ class PeakExplorerBase:
 
     def get_peaks(self):
         shape = self.get_data().shape
-        index = self.indices[0]
+        index = self.indices
+        if len(index) == 1:
+            index = index[0]
         ori = self.orientations.data[index][0] # use 2d indexer?
         shape = self.get_data().shape
         peaks = self.indexer.get_indices(ori, shape)
@@ -159,7 +161,9 @@ class PeakExplorer(PeakExplorerBase):
     
     def set_title(self):
         shape = self.get_data().shape
-        index = self.indices[0]
+        index = self.indices
+        if len(index) == 1:
+            index = index[0]
         ori = self.orientations.data[index][0] # use 2d indexer?
         n = ori.number
         center_x = ori.center_x

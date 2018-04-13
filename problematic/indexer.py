@@ -293,7 +293,8 @@ class Indexer(object):
         self.scale = 1/pixelsize
         
         self.theta = theta
-        
+        self.minimum_reflections_in_projection = 10
+
         nprojections = len(self.projections)
         nrotations = int(2*np.pi/self.theta)
         print("{} projections x {} rotations = {} items\n".format(nprojections, nrotations, nprojections*nrotations))
@@ -397,6 +398,8 @@ class Indexer(object):
         scale = self.scale
         
         for n, projection in enumerate(self.projections):
+            if len(projection) < self.minimum_reflections_in_projection:
+                continue
             best_score = 0
             best_gamma = 0
             proj = projection[:,3:6]
