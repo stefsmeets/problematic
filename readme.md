@@ -143,6 +143,22 @@ Load all data:
 processed = serialED.load("processed.hdf5")
 ```
 
+## Working with tiff files
+
+Tiff files can be loaded as follows:
+
+```python
+from problematic import serialED
+from PIL import Image
+import numpy as np
+import glob
+
+filelist = glob.glob("data/*.tiff")
+
+data = [np.array(Image.open(fn)) for fn in filelist]
+ed = serialED.serialED(data)
+```
+
 ## Requirements
 
 - Python3.6
