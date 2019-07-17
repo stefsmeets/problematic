@@ -163,7 +163,7 @@ ed = serialED.serialED(data)
 
 - Python3.6
 - [HyperSpy](http://hyperspy.org/)
-- [sginfo](http://cci.lbl.gov/sginfo/) must be available as `sginfo` on the search path
+- An updated version of [sginfo](http://cci.lbl.gov/sginfo/) must be available as `sginfo` on the search path. It is available as part of the [focus package](https://github.com/stefsmeets/focus_package/tree/master/focus/src/sginfo)
 - ...
 
 ## Install using Conda
