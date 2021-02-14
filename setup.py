@@ -38,7 +38,7 @@ setup(
 
     packages=["problematic",],
 
-    install_requires=["numpy", "scipy", "pandas", "scikit-image", "pyyaml", "lmfit", "cython", "h5py"],
+    install_requires=["numpy", "scipy", "pandas", "scikit-image", "pyyaml", "lmfit", "cython", "h5py", 'hyperspy'],
 
     package_data={
         "": ["LICENCE",  "readme.md", "setup.py"],

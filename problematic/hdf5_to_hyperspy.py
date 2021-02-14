@@ -11,12 +11,12 @@ def hdf5_to_hyperspy(fns):
 
     dat = []
     for fn in fns:
-        f = h5py.File(fn)
+        f = h5py.File(fn, 'r')
         dat.append(np.array(f["data"]))
         f.close()
     
     try:
-        f = h5py.File(fn)
+        f = h5py.File(fn, 'r')
         pixelsize = f["data"].attrs["ImagePixelsize"]
     except KeyError:
         pixelsize = 1

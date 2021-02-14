@@ -1,10 +1,10 @@
 import hyperspy.api as hs
 from hdf5_to_hyperspy import hdf5_to_hyperspy
-# from pyxem.utils.peakfinders2D import find_peaks_regionprops
-from .peakfinders2d import find_peaks_regionprops
-from .peakfinders2d_gui import PeakFinderUIIPYW
-# from pyxem.utils.expt_utils import find_beam_position_blur
-from .utils import find_beam_position_blur
+
+from problematic.peakfinders2d import find_peaks_regionprops
+from problematic.peakfinders2d_gui import PeakFinderUIIPYW
+
+from problematic.utils import find_beam_position_blur
 import os
 from hyperspy.signals import Signal2D
 import numpy as np
@@ -14,8 +14,7 @@ import datetime
 from stretch_correction import apply_stretch_correction
 import io_utils
 
-from .io_utils import save_orientations
-from .io_utils import load_orientations
+from problematic.io_utils import save_orientations, load_orientations
 
 
 def im_reconstruct(props, shape=None, clip=True):
@@ -44,7 +43,10 @@ def load(filepat):
             fns = df.index.tolist()
             signal = hdf5_to_hyperspy(fns)
         elif ext.lower() in (".hspy", ".hdf5", ".h5"):
-            signal = hs.load(filepat)
+            try:
+                signal = hs.load(filepat)
+            except ValueError:
+                signal = hdf5_to_hyperspy(filepat)
         else:
             f = open(filepat, "r")
             fns = [line.split("#")[0].strip() for line in f if not line.startswith("#")]
@@ -240,10 +242,10 @@ class serialED(Signal2D):
         centers: BaseSignal1D
             List of centers of the diffraction patterns
         nsolutions: int
-            Number of best solutions to keep for each fram
+            Number of best solutions to keep for each frame
         filter1d: bool
             Use a powder pattern as a first selection criterion to determine
-            if a frame is good or nto
+            if a frame is good or not
         nprojs: int
             Number of projections to keep, corresponding to filter1d
 
@@ -273,6 +275,7 @@ class serialED(Signal2D):
         orientation_collection = self.map(indexer.find_orientation, center=centers, nsolutions=nsolutions,
                                           filter1d=filter1d, nprojs=nprojs, 
                                           parallel=False, inplace=False)
+        orientation_collection.data = orientation_collection.data.view(np.recarray)
         self._raw_orientations = orientation_collection
         return orientation_collection
 
@@ -322,6 +325,7 @@ class serialED(Signal2D):
         orientation_collection = self.map(indexer.refine_all, results=orientation_collection, sort=sort, method=method, 
                                           vary_scale=vary_scale, vary_center=vary_center, vary_alphabeta=vary_alphabeta, 
                                           parallel=False, inplace=False, **kwargs)
+        orientation_collection.data = orientation_collection.data.view(np.recarray)
         self._orientations = orientation_collection
         return orientation_collection
 

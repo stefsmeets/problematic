@@ -119,6 +119,8 @@ def get_indices(pks, scale, center, shape, hkl=None):
 
 # store the results of indexing
 IndexingResult = namedtuple("IndexingResult", ["score", "number", "alpha", "beta", "gamma", "center_x", "center_y", "scale", "phase"])
+IndexingResultDType = [("score", '<f8'), ("number", '<i8'), ("alpha", '<f8'), ("beta", '<f8'), ("gamma", '<f8'), 
+                ("center_x", '<f8'), ("center_y", '<f8'), ("scale", '<f8'), ("phase", '<S16')]
 
 # description of each projection
 ProjInfo = namedtuple("ProjectionInfo", ["number", "alpha", "beta"])
@@ -426,7 +428,7 @@ class Indexer(object):
                                   scale=round(scale, 4),
                                   phase=phase) for (score, n, gamma) in heap]
 
-        return results
+        return np.array(results, dtype=IndexingResultDType)
     
     def plot_all(self, img, results, **kwargs):
         """
@@ -592,7 +594,7 @@ class Indexer(object):
                                  scale=scale,
                                  phase=result.phase)
         
-        return refined
+        return np.array(refined, dtype=IndexingResultDType).view(np.recarray)
 
     def probability_distribution(self, img, result, projector=None, verbose=True, vary_center=False, vary_scale=True):
         """https://lmfit.github.io/lmfit-py/fitting.html#lmfit.minimizer.Minimizer.emcee
