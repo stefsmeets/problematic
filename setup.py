@@ -26,14 +26,14 @@ setup(
     description="Program for data analysis of serial electron diffraction data",
 
     author="Stef Smeets",
-    author_email="stef.smeets@mmk.su.se",
-    license="GPL",
+    author_email="s.smeets@esciencecenter.nl",
     url="https://github.com/stefsmeets/problematic",
 
     ext_modules = ext_modules,
 
     classifiers=[
         'Programming Language :: Python :: 3.6',
+        'License :: OSI Approved :: MIT License',
     ],
 
     packages=["problematic",],
