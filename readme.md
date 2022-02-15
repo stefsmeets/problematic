@@ -171,7 +171,7 @@ ed = serialED.serialED(data)
 - lmfit
 - cython
 - h5py
-- The program [sginfo](http://cci.lbl.gov/sginfo/) must be available as `sginfo` on the search path. Its source code is available as part of the [focus package](https://github.com/stefsmeets/focus_package/tree/master/focus/src/sginfo)
+- The program [sginfo](http://cci.lbl.gov/sginfo/) must be available as `sginfo` on the search path. This code uses a specific version of `sginfo` available as part of the [focus package](https://github.com/stefsmeets/focus_package/tree/master/focus/src/sginfo). To compile,  clone the `focus_package` repo, go to `focus/src/sginfo` and run `make`. Make sure the binary is available on your system path.
 
 ## Install using Conda
 
